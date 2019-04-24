@@ -10,7 +10,7 @@
 
 ### 使用示意图展示普通文件IO方式(fwrite等)的流程，即进程与系统内核，磁盘之间的数据交换如何进行？为什么写入完成后要调用fsync？
 
-![](https://github.com/LSunQQ/Family-Li/blob/master/images-h1/2.png)
+![](/images-h1/2.png)
 
 
 
