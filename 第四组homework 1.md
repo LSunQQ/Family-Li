@@ -177,9 +177,10 @@ IOPS = 129，BW = 2077KiB/s
 
 用fio工具测试模拟NVM
 
-IOPS = 165，BW = 2653KiB/s
+IOPS = 1435K，BW =21.9GiB/s
 
-![](https://github.com/LSunQQ/Family-Li/blob/master/images-h1/对NVM.png)
+![](https://github.com/LSunQQ/Family-Li/blob/master/images-h1/对NVM1.png)
+![](https://github.com/LSunQQ/Family-Li/blob/master/images-h1/对NVM2.png)
 
 
 
