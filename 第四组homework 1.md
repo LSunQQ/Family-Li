@@ -179,8 +179,8 @@ IOPS = 129，BW = 2077KiB/s
 
 IOPS = 1435K，BW =21.9GiB/s
 
-![](https://github.com/LSunQQ/Family-Li/blob/master/images-h1/对NVM1.png)
-![](https://github.com/LSunQQ/Family-Li/blob/master/images-h1/对NVM2.png)
+![](https://github.com/LSunQQ/Family-Li/blob/master/images-h1/对NVM1.jpg)
+![](https://github.com/LSunQQ/Family-Li/blob/master/images-h1/对NVM2.jpg)
 
 
 
