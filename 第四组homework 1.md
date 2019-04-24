@@ -10,11 +10,11 @@
 
 ### 使用示意图展示普通文件IO方式(fwrite等)的流程，即进程与系统内核，磁盘之间的数据交换如何进行？为什么写入完成后要调用fsync？
 
-![](https://github.com/LSunQQ/Family-Li/blob/master/images-h1/2.png)
+![](/images-h1/2.png)
 
 
 
-![](https://github.com/LSunQQ/Family-Li/blob/master/images-h1/1.png)
+![](/images-h1/1.png)
 
 
 
@@ -143,25 +143,25 @@ void close()     //关闭通道，如果有可写的内存映射，其中的更�
 
 输出快照
 
-![](https://github.com/LSunQQ/Family-Li/blob/master/images-h1/输出快照.png)
+![](/images-h1/输出快照.png)
 
 
 
 写前（未挂载）
 
-![](https://github.com/LSunQQ/Family-Li/blob/master/images-h1/写前.png)
+![](/images-h1/写前.png)
 
 
 
 写后（未挂载）
 
-![](https://github.com/LSunQQ/Family-Li/blob/master/images-h1/写后.png)
+![](/images-h1/写后.png)
 
 
 
 挂载
 
-![](https://github.com/LSunQQ/Family-Li/blob/master/images-h1/挂载.png)
+![](/images-h1/挂载.png)
 
 挂载到/mnt/pemedir下
 
@@ -171,7 +171,7 @@ void close()     //关闭通道，如果有可写的内存映射，其中的更�
 
 IOPS = 129，BW = 2077KiB/s
 
-![](https://github.com/LSunQQ/Family-Li/blob/master/images-h1/对硬盘.png)
+![](/images-h1/对硬盘.png)
 
 
 
@@ -179,8 +179,8 @@ IOPS = 129，BW = 2077KiB/s
 
 IOPS = 1435K，BW =21.9GiB/s
 
-![](https://github.com/LSunQQ/Family-Li/blob/master/images-h1/对NVM1.jpg)
-![](https://github.com/LSunQQ/Family-Li/blob/master/images-h1/对NVM2.jpg)
+![](/images-h1/对NVM1.jpg)
+![](/images-h1/对NVM2.jpg)
 
 
 
@@ -192,37 +192,37 @@ IOPS = 1435K，BW =21.9GiB/s
 
 首先通过git clone https://github.com/pmem/pmdk指令下载pmdk包，然后在README中看到其需要安装的库，如下图：
 
-![](https://github.com/LSunQQ/Family-Li/blob/master/images-h1/one.png)
+![](/images-h1/one.png)
 
 
 
 通过对于相关博客<https://www.jianshu.com/p/bba1cdf01647>的参考下对于其进行安装。但是在安装过程中对于autoconf与pkg-config的安装都无太大问题，可对于libndctl安装过程中总是出现报错，而其中uuid-devel与json-c-devel在安装过程中找不到包，导致对于libndctl库的安装无法进行。
 
-![](https://github.com/LSunQQ/Family-Li/blob/master/images-h1/two.png)
+![](/images-h1/two.png)
 
 
 
 后面发现可以直接使用apt-get install libndctl-dev进行安装，可是还是在pmdk目录下进行make的时候，还是说我们没有安装libndctl库，但是我们输入sudo apt search libndctl之后发现它其实已经安装好了
 
-![](https://github.com/LSunQQ/Family-Li/blob/master/images-h1/three.png)
+![](/images-h1/three.png)
 
 
 
 后来尝试了重启一下之后输入make不知道为什么就成功了，输出如下：
 
-![](https://github.com/LSunQQ/Family-Li/blob/master/images-h1/o.jpg)
+![](/images-h1/o.jpg)
 
 
 
 再make install 一下
 
-![](https://github.com/LSunQQ/Family-Li/blob/master/images-h1/t.jpg)
+![](/images-h1/t.jpg)
 
 
 
 生成红色圈里面的东西
 
-![](https://github.com/LSunQQ/Family-Li/blob/master/images-h1/s.jpg)
+![](/images-h1/s.jpg)
 
 
 
@@ -230,7 +230,7 @@ IOPS = 1435K，BW =21.9GiB/s
 
 这是我们使用的测试代码
 
-![](https://github.com/LSunQQ/Family-Li/blob/master/images-h1/代码.jpg)
+![](/images-h1/代码.jpg)
 
 
 
@@ -238,19 +238,19 @@ IOPS = 1435K，BW =21.9GiB/s
 
 用vim打开simple_copy.vcxproj，输出如下：
 
-![](https://github.com/LSunQQ/Family-Li/blob/master/images-h1/a.jpg)
+![](/images-h1/a.jpg)
 
 
 
 然后用以下命令复制：
 
-![](https://github.com/LSunQQ/Family-Li/blob/master/images-h1/q.png)
+![](/images-h1/q.png)
 
 
 
 用vim打开simple_copy.vcxproj.filter ，输入如下：
 
-![](https://github.com/LSunQQ/Family-Li/blob/master/images-h1/f.jpg)
+![](/images-h1/f.jpg)
 
 
 
