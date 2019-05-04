@@ -141,7 +141,7 @@ PAllocator::~PAllocator() {
 
 
 // memory map all leaves to pmem address, storing them in the fId2PmAddr
-void PAllocator::initFilePmemAddr() { //ok
+void PAllocator::initFilePmemAddr() {
     // TODO
     char *pmemaddr;
     size_t mapped_len;
