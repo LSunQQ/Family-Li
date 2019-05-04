@@ -82,63 +82,63 @@ PAllocator::PAllocator() {
         // TODO
         ofstream allocatorCatalog(allocatorCatalogPath, ios::out);
         ofstream freeListFile(freeListPath, ios::out);
-        this->maxFileId = 1;
+        this->maxFileId = 0;
         this->freeNum =0;
         this->startLeaf.fileId = 0;
         this->startLeaf.offset = 0;
     }
     this->initFilePmemAddr();
-
 }
 
 PAllocator::~PAllocator() {
     // TODO
     string allocatorCatalogPath = DATA_DIR + P_ALLOCATOR_CATALOG_NAME;
-	string freeListPath         = DATA_DIR + P_ALLOCATOR_FREE_LIST;
-	ofstream allocatorCatalog(allocatorCatalogPath, ios::out|ios::binary);
-	ofstream freeListFile(freeListPath, ios::out|ios::binary);
-	uint64_t num1 = this->maxFileId;
-	uint64_t num2 = this->freeNum;
-	uint64_t num3 = this->startLeaf.fileId;
-	uint64_t num4 = this->startLeaf.offset;
-	char ch[256];
-	for(int i = 63; i >= 0;) {
-	    ch[i --] = num1 % 10 + '0';
-	    num1 /= 10;
-	}
-	for(int i = 127; i >= 64;) {
-	    ch[i --] = num2 % 10 + '0';
-	    num2 /= 10;
-	}
-	for(int i = 191; i >= 128;) {
-	    ch[i --] = num3 % 10+'0';
-	    num3 /= 10;
-	}
-	for(int i = 255; i >= 192;) {
-	    ch[i --] = num4 % 10 + '0';
-	    num4 /= 10;
-	}
-	allocatorCatalog.write(ch, sizeof(ch));
-	char s[freeNum * 128];
-	uint64_t fileId;
-	uint64_t offset;
-	this->startLeaf.fileId = 0;
-	this->startLeaf.offset = 0;
-	for(int i = 0; i < freeList.size(); i ++) {
-	    for(int j = 63; j >= 0; ) {
-	        s[j --] = freeList[i].fileId % 10 + '0';
-	        freeList[i].fileId /= 10;
-	    }
-	    for(int j = 127; j >= 64; ) {
-	        s[j --]=freeList[i].offset % 10+'0';
-	        freeList[i].offset /= 10;
-	    }
-	    
-	}
-	freeListFile.write(s, sizeof(s));
-	allocatorCatalog.close();
-	freeListFile.close();
+    string freeListPath         = DATA_DIR + P_ALLOCATOR_FREE_LIST;
+    ofstream allocatorCatalog(allocatorCatalogPath, ios::out|ios::binary);
+    ofstream freeListFile(freeListPath, ios::out|ios::binary);
+    uint64_t num1 = this->maxFileId;
+    uint64_t num2 = this->freeNum;
+    uint64_t num3 = this->startLeaf.fileId;
+    uint64_t num4 = this->startLeaf.offset;
+    char ch[32];
+    for(int i = 7; i >= 0;) {
+        ch[i --] = num1 % 10 + '0';
+        num1 /= 10;
+    }
+    for(int i = 15; i >= 8;) {
+        ch[i --] = num2 % 10 + '0';
+        num2 /= 10;
+    }
+    for(int i = 23; i >= 16;) {
+        ch[i --] = num3 % 10+'0';
+        num3 /= 10;
+    }
+    for(int i = 31; i >= 24;) {
+        ch[i --] = num4 % 10 + '0';
+        num4 /= 10;
+    }
+    allocatorCatalog.write(ch, sizeof(ch));
+    char s[freeNum * 2];
+    uint64_t fileId;
+    uint64_t offset;
+    this->startLeaf.fileId = 0;
+    this->startLeaf.offset = 0;
+    for(int i = 0; i < freeList.size(); i ++) {
+        for(int j = 7; j >= 0; ) {
+            s[j --] = freeList[i].fileId % 10 + '0';
+            freeList[i].fileId /= 10;
+        }
+        for(int j = 15; j >= 8; ) {
+            s[j --]=freeList[i].offset % 10+'0';
+            freeList[i].offset /= 10;
+        }
+        
+    }
+    freeListFile.write(s, sizeof(s));
+    allocatorCatalog.close();
+    freeListFile.close();
 }
+
 
 // memory map all leaves to pmem address, storing them in the fId2PmAddr
 void PAllocator::initFilePmemAddr() { //ok
