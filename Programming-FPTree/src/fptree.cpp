@@ -246,17 +246,46 @@ void LeafNode::printNode() {
 // new a empty leaf and set the valuable of the LeafNode
 LeafNode::LeafNode(FPTree* t) {
     // TODO
+    this->tree = t;
+    PAllocator::getAllocator()->getLeaf(this->pPointer, this->pmem_addr);
+    this->degree = LEAF_DEGREE;
+    this->isLeaf = true;
+    this->bitmapSize = (2 * this->degree + 7) / 8;
+    this->bitmap = (Byte *)this->pmem_addr;
+    this->pNext = (PPointer *)(this->pmem_addr + this->bitmapSize);
+    this->fingerprints = (Byte *)(this->pNext + sizeof(this->pPointer));
+    this->kv = (KeyValue *)(this->fingerprints + 2 * this->degree * sizeof(Byte));
+    this->n = 0;
+    this->prev = nullptr;
+    this->next = nullptr;
+    this->filePath = DATA_DIR + to_string(this->pPointer.fileId);
 }
 
 // reload the leaf with the specific Persistent Pointer
 // need to call the PAllocator
 LeafNode::LeafNode(PPointer p, FPTree* t) {
     // TODO
+    this->tree = t;
+    this->pPointer = p;
+    this->pmem_addr = PAllocator::getAllocator()->getLeafPmemAddr(this->pPointer);
+    this->degree = LEAF_DEGREE;
+    this->isLeaf = true;
+    this->bitmapSize = (2 * this->degree + 7) / 8;
+    this->bitmap = (Byte *)this->pmem_addr;
+    this->pNext = (PPointer *)(this->pmem_addr + this->bitmapSize);
+    this->fingerprints = (Byte *)(this->pNext + sizeof(this->Pointer));
+    this->kv = (KeyValue *)(this->fingerprints + 2 * this->degree * sizeof(Byte));
+    this->n = 0;
+    this->prev = nullptr;
+    this->next = nullptr;
+    this->filePath = DATA_DIR + to_string(this->pPointer.fileId);
 }
 
 LeafNode::~LeafNode() {
     // TODO
+    PAllocator::getAllocator()->freeLeaf(this->pPointer);
 }
+
 
 // insert an entry into the leaf, need to split it if it is full
 KeyNode* LeafNode::insert(const Key& k, const Value& v) {
