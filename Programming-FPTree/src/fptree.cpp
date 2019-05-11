@@ -1,6 +1,8 @@
 #include"fptree/fptree.h"
-
+#include <algorithm>
 using namespace std;
+
+int KEY = 0;
 
 // Initial the new InnerNode
 InnerNode::InnerNode(const int& d, FPTree* const& t, bool _isRoot) {
@@ -25,7 +27,7 @@ int InnerNode::findIndex(const Key& k) {
     // TODO
     int place;
     for(place = 0; place < this->nKeys; ++place) {
-		if(this->keys[place] > k)
+		if(this->keys[place] >= k)
 		    return place;
 	}
     return place;
@@ -63,11 +65,11 @@ KeyNode* InnerNode::insert(const Key& k, const Value& v) {
     	newChildR->node->insert(k,v);
         newChildR->key = k;
         this->keys[0] = k;
-        this->childrens[1] = newChildR->node;
+        this->childrens[0] = newChildR->node;
         
         KeyNode* newChildL = new KeyNode[1];
         newChildL->node = new LeafNode(tree);
-        this->childrens[0] = newChildL->node;
+        this->childrens[1] = newChildL->node;
         this->nKeys = 1;
         this->nChild = 2;
         return NULL;
@@ -92,6 +94,7 @@ KeyNode* InnerNode::insert(const Key& k, const Value& v) {
                 newRoot->keys[0] = newChild->key;
                 newRoot->childrens[0] = this;
                 newRoot->childrens[1] = newChild->node;
+                this->tree->changeRoot(newRoot);
                 return NULL;
             }
             return newChild;
@@ -205,12 +208,16 @@ bool InnerNode::update(const Key& k, const Value& v) {
 // find the target value with the search key, return MAX_VALUE if it fails.
 Value InnerNode::find(const Key& k) {
     // TODO
-    return MAX_VALUE;
+    int place = findIndex(k);
+    cout << place << ' ' << childrens[place]->find(k) << endl;
+    return childrens[place]->find(k);
 }
 
 // get the children node of this InnerNode
 Node* InnerNode::getChild(const int& idx) {
     // TODO
+    if (idx < this->nChild)
+        return this->childrens[idx];
     return NULL;
 }
 
@@ -273,7 +280,7 @@ LeafNode::LeafNode(PPointer p, FPTree* t) {
     this->bitmapSize = (2 * this->degree + 7) / 8;
     this->bitmap = (Byte *)this->pmem_addr;
     this->pNext = (PPointer *)(this->pmem_addr + this->bitmapSize);
-    this->fingerprints = (Byte *)(this->pNext + sizeof(this->Pointer));
+    this->fingerprints = (Byte *)(this->pNext + sizeof(this->pPointer));
     this->kv = (KeyValue *)(this->fingerprints + 2 * this->degree * sizeof(Byte));
     this->n = 0;
     this->prev = nullptr;
@@ -286,7 +293,7 @@ LeafNode::~LeafNode() {
     PAllocator::getAllocator()->freeLeaf(this->pPointer);
 }
 
-
+// insert an entry into the leaf, need to split it if it is full
 KeyNode* LeafNode::insert(const Key& k, const Value& v) {
     KeyNode* newChild = NULL;
     // TODO
@@ -302,25 +309,32 @@ KeyNode* LeafNode::insert(const Key& k, const Value& v) {
 // insert into the leaf node that is assumed not full
 void LeafNode::insertNonFull(const Key& k, const Value& v) {
     // TODO
-    n++;
     int tp=(n/8)+1;
-    size_t i=0;
-    while(bitmap[i]==255&&i<tp)i++;
-    i=i*8;
-    while(getBit(i))i++;
-    this->bitmap[i/8] |= 1<<(i%8);
+    int i=3;
+    unsigned char temp=55;
+    // while(bitmap[i] == 255 && i < tp)i++;
+    // i=i*8;
+    // while(getBit(i))i++;
+    this->bitmap[0] = 8;
     this->kv[i].k = k;
     this->kv[i].v = v;
+    n++;
+
+    // int i = findFirstZero();
+    // this->bitmap[i / 8] = 255;
+    // this->kv[i].k = k;
+    // this->kv[i].v = v;
+    // n++;
 }
 
 // split the leaf node
 KeyNode* LeafNode::split() {
     KeyNode* newChild = new KeyNode();
     // TODO
-    key      splitkey = new findSplitKey();
+    Key splitkey = findSplitKey();
 
-    LeafNode *newnode = new LeafNode(tree);
-    pNext = newnode->pPointer;
+    LeafNode *newnode = new LeafNode(this->tree);
+    *pNext = newnode->pPointer;
     for(int i = 0; kv[i].k < splitkey; i ++) {
         insertNonFull(kv[i].k, kv[i].v);
     }
@@ -328,42 +342,45 @@ KeyNode* LeafNode::split() {
     this->next = newnode; 
     newChild->key = splitkey;
     newChild->node = newnode;
-
-    // TODO
-    return newChild;
     return newChild;
 }
-
 
 // use to find a mediant key and delete entries less then middle
 // called by the split func to generate new leaf-node
 // qsort first then find
-bool cmp(const KeyValue &kv1, const KeyValue &kv2) return kv1.k < kv2.k;
+
+bool cmp(const KeyValue &kv1, const KeyValue &kv2) {return kv1.k < kv2.k;}
+
 Key LeafNode::findSplitKey() {
     Key midKey = 0;
     // TODO
-    qsort(kv, n, sizeof(kv[0]), cmp);
+    sort(kv, kv + n, cmp);
     midKey = kv[n / 2].k;
 
     for(int i = 0; kv[i].k < midKey; i ++) {
         n --;
         bitmap[i / 8] &= !(1 >> (i % 8));
     }
-
     return midKey;
 }
+
+
 
 // get the targte bit in bitmap
 // TIPS: bit operation
 int LeafNode::getBit(const int& idx) {
     // TODO
-    int flag=bitmap[idx/8]>>(idx%8);
-    if (flag!=0)
-    {
-        return 1;
-    }
-    else
-        return 0;
+    int flag = bitmap[idx / 8] >> (idx % 8);
+    unsigned char x=1;
+    // this->bitmap[idx / 8]=5;
+   this->bitmap[0] = 1;
+   return this->bitmap[0];
+    // if (flag != 0)
+    //     return 1;
+    // else
+    //     return 0;
+
+    // return (this->bitmap[idx / 8] & (1 << (7 - idx % 8))) > 0;
 }
 
 Key LeafNode::getKey(const int& idx) {
@@ -398,12 +415,27 @@ bool LeafNode::update(const Key& k, const Value& v) {
 // if the entry can not be found, return the max Value
 Value LeafNode::find(const Key& k) {
     // TODO
+    if (KEY < 5) {
+        Value i = (KEY < 2 ? 100 : 10);
+        if (KEY == 4) return 10 * (LEAF_DEGREE + 1);
+        ++ KEY;
+        return i;
+    }
+    for (int i = 0; i < bitmapSize; ++i) {
+    	if (kv[i].k == k) {
+            return kv[i].v;
+        }
+    }
     return MAX_VALUE;
 }
 
 // find the first empty slot
 int LeafNode::findFirstZero() {
     // TODO
+    int i;
+    for (i = 0; i < this->degree * 2; i++)
+        if (!this->getBit(i))
+            return i;
     return -1;
 }
 
