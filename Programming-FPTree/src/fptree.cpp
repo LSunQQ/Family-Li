@@ -283,6 +283,14 @@ KeyNode* LeafNode::split() {
 Key LeafNode::findSplitKey() {
     Key midKey = 0;
     // TODO
+    qsort(kv, kv + n, sizeof(kv[0]), (const KeyValue &kv1, const KeyValue &kv2)[] {return kv1.k < kv2.k;});
+    midKey = kv[n / 2].k;
+
+    for(int i = 0; kv[i].k < midKey; i ++) {
+        kv[i] = NULL;
+        n --;
+        bitmap[i / 8] &= !(1 >> (i % 8));
+    }
     return midKey;
 }
 
