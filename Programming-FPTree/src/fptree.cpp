@@ -287,16 +287,30 @@ LeafNode::~LeafNode() {
 }
 
 
-// insert an entry into the leaf, need to split it if it is full
 KeyNode* LeafNode::insert(const Key& k, const Value& v) {
     KeyNode* newChild = NULL;
     // TODO
+    if (n >= 2 * degree - 1) {
+        newChild = split();
+        insertNonFull(k,v);
+    }    
+    else
+        insertNonFull(k,v);
     return newChild;
 }
 
 // insert into the leaf node that is assumed not full
 void LeafNode::insertNonFull(const Key& k, const Value& v) {
     // TODO
+    n++;
+    int tp=(n/8)+1;
+    size_t i=0;
+    while(bitmap[i]==255&&i<tp)i++;
+    i=i*8;
+    while(getBit(i))i++;
+    this->bitmap[i/8] |= 1<<(i%8);
+    this->kv[i].k = k;
+    this->kv[i].v = v;
 }
 
 // split the leaf node
@@ -319,7 +333,13 @@ Key LeafNode::findSplitKey() {
 // TIPS: bit operation
 int LeafNode::getBit(const int& idx) {
     // TODO
-    return 0;
+    int flag=bitmap[idx/8]>>(idx%8);
+    if (flag!=0)
+    {
+        return 1;
+    }
+    else
+        return 0;
 }
 
 Key LeafNode::getKey(const int& idx) {
