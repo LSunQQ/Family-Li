@@ -317,15 +317,39 @@ void LeafNode::insertNonFull(const Key& k, const Value& v) {
 KeyNode* LeafNode::split() {
     KeyNode* newChild = new KeyNode();
     // TODO
+    key      splitkey = new findSplitKey();
+
+    LeafNode *newnode = new LeafNode(tree);
+    pNext = newnode->pPointer;
+    for(int i = 0; kv[i].k < splitkey; i ++) {
+        insertNonFull(kv[i].k, kv[i].v);
+    }
+    newnode->prev = this->prev;
+    this->next = newnode; 
+    newChild->key = splitkey;
+    newChild->node = newnode;
+
+    // TODO
+    return newChild;
     return newChild;
 }
+
 
 // use to find a mediant key and delete entries less then middle
 // called by the split func to generate new leaf-node
 // qsort first then find
+bool cmp(const KeyValue &kv1, const KeyValue &kv2) return kv1.k < kv2.k;
 Key LeafNode::findSplitKey() {
     Key midKey = 0;
     // TODO
+    qsort(kv, n, sizeof(kv[0]), cmp);
+    midKey = kv[n / 2].k;
+
+    for(int i = 0; kv[i].k < midKey; i ++) {
+        n --;
+        bitmap[i / 8] &= !(1 >> (i % 8));
+    }
+
     return midKey;
 }
 
