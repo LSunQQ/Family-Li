@@ -332,16 +332,25 @@ KeyNode* LeafNode::split() {
     KeyNode* newChild = new KeyNode();
     // TODO
     Key splitkey = findSplitKey();
+    LeafNode *newNode = new LeafNode(this->tree);
+    memset(bitmap, 0, bitmapSize);
 
-    LeafNode *newnode = new LeafNode(this->tree);
-    *pNext = newnode->pPointer;
-    for(int i = 0; kv[i].k < splitkey; i ++) {
-        insertNonFull(kv[i].k, kv[i].v);
+    for(int i = 0; i < n; i ++) {
+        if(i < n / 2) {
+            this->fingerprints[i] = keyHash(kv[i].k);
+            bitmap[i / 8] |= (1 << (7 - (i % 8)));
+        }
+        else {
+            newNode->insertNonFull(kv[i].k, kv[i].v);
+        }
     }
-    newnode->prev = this->prev;
-    this->next = newnode; 
+
+    n /= 2;
+    *pNext = newNode->pPointer;
     newChild->key = splitkey;
-    newChild->node = newnode;
+    newChild->node = newNode;
+    newNode->persist();
+    this->persist();
     return newChild;
 }
 
@@ -349,21 +358,15 @@ KeyNode* LeafNode::split() {
 // called by the split func to generate new leaf-node
 // qsort first then find
 
-bool cmp(const KeyValue &kv1, const KeyValue &kv2) {return kv1.k < kv2.k;}
+int cmp(const void* kv1,const void* kv2) { return ((KeyValue* )kv1)->k > ((KeyValue* )kv2)->k;}
 
 Key LeafNode::findSplitKey() {
     Key midKey = 0;
     // TODO
-    sort(kv, kv + n, cmp);
+    qsort(kv, n, sizeof(KeyValue), cmp);
     midKey = kv[n / 2].k;
-
-    for(int i = 0; kv[i].k < midKey; i ++) {
-        n --;
-        bitmap[i / 8] &= !(1 >> (i % 8));
-    }
     return midKey;
 }
-
 
 
 // get the targte bit in bitmap
