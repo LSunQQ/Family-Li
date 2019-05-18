@@ -60,12 +60,22 @@ all : $(GTEST_LIBS) $(TESTS)
 
 clean :
 	rm -f $(GTEST_LIBS) $(TESTS) *.o ../data/*
+	sudo umount /dev/pmem0
+	rm -rf bin
 cleano :
 	rm -f $(GTEST_LIBS) *.o
 
 cleand : 
 	rm -f ../data/*
 
+.PHONY:mount  
+mount :
+	mkdir -p bin/data
+	-sudo umount /dev/pmem0
+	#mount NVM to the data directory
+	sudo mkfs.ext4 /dev/pmem0
+	sudo mount -o dax /dev/pmem0 ./bin/data
+	sudo chmod -R 0777 ./bin/data
 # Builds gtest.a and gtest_main.a.
 
 # Usually you shouldn't tweak such internal variables, indicated by a
@@ -107,15 +117,14 @@ clhash.o : $(USER_DIR)/clhash.c $(USER_HEADER_DIR)/utility/clhash.h
 $(UTILITY_TEST) : utility_test.o clhash.o p_allocator.o utility.o
 	$(CXX) $(CXXFLAGS) -L. -lgtest -lgtest_main $^ -o $@ -lpmem
 
-utility_test.o : utility_test.cpp $(BIN)
+utility_test.o : utility_test.cpp $(BIN) mount
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@ -I $(USER_HEADER_DIR)
-
 # fptree test
 $(FPTREE_TEST) :fptree_test.o fptree.o clhash.o p_allocator.o utility.o
 	$(CXX) $(CXXFLAGS) -L. -lgtest -lgtest_main $^ -o $@ -lpmem
 
-fptree_test.o : fptree_test.cpp
+fptree_test.o : fptree_test.cpp mount
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@ -I $(USER_HEADER_DIR)
 
 $(BIN):
-	mkdir -p bin
+	@mkdir -p bin
