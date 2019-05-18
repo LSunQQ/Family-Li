@@ -190,7 +190,7 @@ KeyNode* InnerNode::split() {
     return newChild;
 }
 
-// remove the target entry
+// remove  the target entry
 // return TRUE if the children node is deleted after removement.
 // the InnerNode need to be redistributed or merged after deleting one of its children node.
 bool InnerNode::remove(const Key& k, const int& index, InnerNode* const& parent, bool &ifDelete) {
