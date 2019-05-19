@@ -248,9 +248,8 @@ void InnerNode::removeChild(const int& keyIdx, const int& childIdx) {
 // update the target entry, return true if the update succeed.
 bool InnerNode::update(const Key& k, const Value& v) {
     // TODO
-    if(nKeys == 0 && nChild == 0) return false;
-    int idx = find(k);
-    return childrens[idx]->update(k,v);
+    int place = findIndex(k);
+    return childrens[place]->update(k,v);
 }
 
 // find the target value with the search key, return MAX_VALUE if it fails.
