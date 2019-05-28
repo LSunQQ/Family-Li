@@ -7,7 +7,7 @@
 #define VALUE_LEN 8
 using namespace std;
 
-const string workload = "../../workloads/"; // TODO: the workload folder filepath
+const string workload = "/home/lsw/桌面/Programming-FPTree/workloads/"; // TODO: the workload folder filepath
 
 const string load = workload + "1w-rw-50-50-load.txt"; // TODO: the workload_load filename
 const string run  = workload + "1w-rw-50-50-run.txt"; // TODO: the workload_run filename
