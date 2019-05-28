@@ -266,3 +266,536 @@ bool InnerNode::remove(const Key& k, const int& index, InnerNode* const& parent,
     }
     return ifRemove;
 }
+
+// If the leftBro and rightBro exist, the rightBro is prior to be used
+void InnerNode::getBrother(const int& index, InnerNode* const& parent, InnerNode* &leftBro, InnerNode* &rightBro) {
+    // TODO
+    if (index != 0)
+        leftBro = (InnerNode *)parent->childrens[index - 1];
+    else
+        leftBro = NULL;
+    if (index != parent->nChild - 1)
+        rightBro = (InnerNode *)parent->childrens[index + 1];
+    else
+        rightBro = NULL;
+}
+
+// merge this node, its parent and left brother(parent is root)
+void InnerNode::mergeParentLeft(InnerNode* const& parent, InnerNode* const& leftBro) {
+    // TODO
+    // we use the left brother as the new root
+    leftBro->isRoot = true;
+    leftBro->tree->changeRoot(leftBro);
+    parent->isRoot = false;
+    leftBro->keys[leftBro->nKeys] = parent->keys[0];
+    // merge the nodes to the new root
+    for (int i = 0; i < this->nChild; ++i) {
+        leftBro->childrens[i + leftBro->nChild] = this->childrens[i];
+        if (i != 0)
+            leftBro->keys[i + leftBro->nKeys] = this->keys[i - 1];
+    }
+    leftBro->nChild += this->nChild;
+    leftBro->nKeys = leftBro->nKeys + this->nKeys + 1;
+    this->nChild = 0;
+    this->nKeys = 0;
+}
+
+// merge this node, its parent and right brother(parent is root)
+void InnerNode::mergeParentRight(InnerNode* const& parent, InnerNode* const& rightBro) {
+    // TODO
+    // we use this node as the new root
+    this->isRoot = true;
+    this->tree->changeRoot(this);
+    parent->isRoot = false;
+    this->keys[this->nKeys] = parent->keys[0];
+    // merge the nodes to the new root
+    for (int i = 0; i < rightBro->nChild; ++i) {
+        this->childrens[i + this->nChild] = rightBro->childrens[i];
+        if (i != 0)
+            this->keys[i + this->nKeys] = rightBro->keys[i - 1];
+    }
+    this->nChild += rightBro->nChild;
+    this->nKeys = this->nKeys + rightBro->nKeys + 1;
+    rightBro->nChild = 0;
+    rightBro->nKeys = 0;
+}
+
+// this node and its left brother redistribute
+// the left has more entries
+void InnerNode::redistributeLeft(const int& index, InnerNode* const& leftBro, InnerNode* const& parent) {
+    // TODO
+    Key newkey = leftBro->keys[leftBro->nKeys - 1];
+    // make a space for the new node
+    for (int i = this->nChild; i > 0; --i) {
+        this->childrens[i] = this->childrens[i - 1];
+        if (i < this->nChild)
+            this->keys[i] = this->keys[i - 1];
+    }
+    this->nChild++;
+    this->nKeys++;
+    this->childrens[0] = leftBro->childrens[leftBro->nChild - 1];
+    // the first child key value is its parent key value
+    this->keys[0] = parent->keys[index - 1];
+    // the new parent key value is the last key value in its left brother
+    parent->keys[index - 1] = newkey;
+    leftBro->nChild--;
+    leftBro->nKeys--;
+}
+
+// this node and its right brother redistribute
+// the right has more entries
+void InnerNode::redistributeRight(const int& index, InnerNode* const& rightBro, InnerNode* const& parent) {
+    // TODO
+    Key newkey = rightBro->keys[0];
+    // the last child key value is its parent key value
+    this->keys[nKeys++] = parent->keys[index];
+    // the new parent key value is the first key value in its right brother
+    parent->keys[index] = newkey;
+    this->childrens[nChild++] = rightBro->childrens[0];
+    rightBro->nChild--;
+    rightBro->nKeys--;
+    for (int i = 0; i < rightBro->nChild; ++i) {
+        if (i < rightBro->nChild - 1)
+            rightBro->keys[i] = rightBro->keys[i + 1];
+        rightBro->childrens[i] = rightBro->childrens[i + 1];
+    }
+}
+
+// merge all entries to its left bro, delete this node after merging.
+void InnerNode::mergeLeft(InnerNode* const& leftBro, const Key& k) {
+    // TODO
+    for (int i = 0; i < this->nChild; ++i) {
+        leftBro->childrens[i + leftBro->nChild] = this->childrens[i];
+        if (i == 0)
+            leftBro->keys[i + leftBro->nKeys] = k;
+        else
+            leftBro->keys[i + leftBro->nKeys] = this->keys[i - 1];
+    }
+    leftBro->nChild += this->nChild;
+    leftBro->nKeys = leftBro->nKeys + this->nKeys + 1;
+    this->nChild = 0;
+    this->nKeys = 0;
+}
+
+// merge all entries to its right bro, delete this node after merging.
+void InnerNode::mergeRight(InnerNode* const& rightBro, const Key& k) {
+    // TODO
+    for (int i = rightBro->nChild + this->nChild - 1; i >= this->nChild; --i) {
+        rightBro->childrens[i] = rightBro->childrens[i - this->nChild];
+        if (i != rightBro->nChild+ this->nChild - 1)
+            rightBro->keys[i] = rightBro->keys[i - this->nChild];
+    }
+    for (int i = 0; i < this->nChild; ++i) {
+        rightBro->childrens[i] = this->childrens[i];
+        if (i != this->nChild - 1)
+            rightBro->keys[i] = this->keys[i];
+        else rightBro->keys[i] = k;
+    }
+    rightBro->nChild += this->nChild;
+    rightBro->nKeys = rightBro->nKeys + this->nKeys + 1;
+    this->nChild = 0;
+    this->nKeys = 0;
+}
+
+// remove a children from the current node, used by remove func
+void InnerNode::removeChild(const int& keyIdx, const int& childIdx) {
+    // TODO
+    this->nChild--;
+    this->nKeys--;
+    if (keyIdx != this->nKeys + 1) {
+        for (int i = keyIdx; i < this->nChild; ++i) {
+            this->childrens[i] = this->childrens[i + 1];
+            if (i != this->nChild - 1)
+                this->keys[i] = this->keys[i + 1];
+        }
+    }
+}
+
+// update the target entry, return true if the update succeed.
+bool InnerNode::update(const Key& k, const Value& v) {
+    // TODO
+    int place = findIndex(k);
+    return childrens[place]->update(k,v);
+}
+
+// find the target value with the search key, return MAX_VALUE if it fails.
+Value InnerNode::find(const Key& k) {
+    // TODO
+    int place = findIndex(k);
+    return childrens[place]->find(k);
+}
+
+// get the children node of this InnerNode
+Node* InnerNode::getChild(const int& idx) {
+    // TODO
+    if (idx < this->nChild)
+        return this->childrens[idx];
+    return NULL;
+}
+
+// get the key of this InnerNode
+Key InnerNode::getKey(const int& idx) {
+    if (idx < this->nKeys) {
+        return this->keys[idx];
+    } else {
+        return MAX_KEY;
+    }
+}
+
+// print the InnerNode
+void InnerNode::printNode() {
+    cout << "||#|";
+    for (int i = 0; i < this->nKeys; i++) {
+        cout << " " << this->keys[i] << " |#|";
+    }
+    cout << "|" << "    ";
+}
+
+// print the LeafNode
+void LeafNode::printNode() {
+    cout << "||";
+    for (int i = 0; i < 2 * this->degree; i++) {
+        if (this->getBit(i)) {
+            cout << " " << this->kv[i].k << " : " << this->kv[i].v << " |";
+        }
+    }
+    cout << "|" << " ====>> ";
+}
+
+// new a empty leaf and set the valuable of the LeafNode
+LeafNode::LeafNode(FPTree* t) {
+    // TODO
+    this->tree = t;
+    PAllocator::getAllocator()->getLeaf(this->pPointer, this->pmem_addr);
+    this->degree = LEAF_DEGREE;
+    this->isLeaf = true;
+    // Leaf : | bitmap | pNext | fingerprints array | KV array |
+    this->bitmapSize = (2 * this->degree + 7) / 8;
+    this->bitmap = (Byte *)this->pmem_addr;
+    this->pNext = (PPointer *)(this->pmem_addr + this->bitmapSize);
+    this->fingerprints = (Byte *)(this->pmem_addr + this->bitmapSize + sizeof(this->pPointer));
+    this->kv = (KeyValue *)(this->fingerprints + 2 * this->degree * sizeof(Byte));
+    this->n = 0;
+    this->prev = nullptr;
+    this->next = nullptr;
+    filePath=DATA_DIR+ to_string(this->pPointer.fileId);
+}
+
+// reload the leaf with the specific Persistent Pointer
+// need to call the PAllocator
+LeafNode::LeafNode(PPointer p, FPTree* t) {
+    // TODO
+    this->tree = t;
+    this->pPointer = p;
+    this->pmem_addr = PAllocator::getAllocator()->getLeafPmemAddr(this->pPointer);
+    this->degree = LEAF_DEGREE;
+    this->isLeaf = true;
+    // Leaf : | bitmap | pNext | fingerprints array | KV array |
+    this->bitmapSize = (2 * this->degree + 7) / 8;
+    this->bitmap = (Byte *)this->pmem_addr;
+    this->pNext = (PPointer *)(this->pmem_addr + this->bitmapSize);
+    this->fingerprints = (Byte *)(this->pmem_addr + this->bitmapSize + sizeof(this->pPointer));
+    this->kv = (KeyValue *)(this->fingerprints + 2 * this->degree * sizeof(Byte));
+    this->n = 0;
+    this->prev = nullptr;
+    Byte* tmp = this->bitmap;
+    for(uint64_t i = 0; i < bitmapSize; i++) {
+        n += countOneBits(*tmp);
+        tmp++;
+    }
+    this->filePath = DATA_DIR + to_string(this->pPointer.fileId);
+    if(pNext->fileId != 0) {
+        this->next = new LeafNode(*pNext, t);
+        this->next->prev = this;
+    }
+    else
+        this->next = nullptr;
+}
+
+LeafNode::~LeafNode() {
+    // TODO
+    PAllocator::getAllocator()->freeLeaf(this->pPointer);
+}
+
+// insert an entry into the leaf, need to split it if it is full
+KeyNode* LeafNode::insert(const Key& k, const Value& v) {
+    KeyNode* newChild = NULL;
+    // TODO
+    if (n >= 2 * degree - 1) {
+        insertNonFull(k, v);
+        newChild = split();
+        next = (LeafNode*)(newChild->node);
+        ((LeafNode*)(newChild -> node))->prev = this;
+    }    
+    else
+        insertNonFull(k,v);
+    return newChild;
+}
+
+// insert into the leaf node that is assumed not full
+void LeafNode::insertNonFull(const Key& k, const Value& v) {
+    // TODO
+    int i = findFirstZero(); 
+    this->fingerprints[i] = keyHash(k);
+    this->bitmap[i / 8] |= 1 << (i % 8);
+    this->kv[i].k = k;
+    this->kv[i].v = v;
+    n++;
+    persist();
+}
+
+// split the leaf node
+KeyNode* LeafNode::split() {
+    KeyNode* newChild = new KeyNode();
+    // TODO
+    Key splitkey = findSplitKey();
+    LeafNode *newNode = new LeafNode(this->tree);
+    memset(bitmap, 0, bitmapSize);
+
+    for(int i = 0; i < n; i++) {
+        if(i < n / 2) {
+            // update the bitmap
+            this->fingerprints[i] = keyHash(kv[i].k);
+            bitmap[i / 8] |= (1 << (7 - (i % 8)));
+        }
+        else {
+            newNode->insertNonFull(kv[i].k, kv[i].v);
+        }
+    }
+
+    n /= 2;
+    *pNext = newNode->pPointer;
+    newChild->key = splitkey;
+    newChild->node = newNode;
+    newNode->persist();
+    this->persist();
+    return newChild;
+}
+
+// use to find a mediant key and delete entries less then middle
+// called by the split func to generate new leaf-node
+// qsort first then find
+
+int cmp(const void* kv1,const void* kv2) { return ((KeyValue* )kv1)->k > ((KeyValue* )kv2)->k;}
+
+Key LeafNode::findSplitKey() {
+    Key midKey = 0;
+    // TODO
+    qsort(kv, n, sizeof(KeyValue), cmp);
+    midKey = kv[n / 2].k;
+    return midKey;
+}
+
+// get the targte bit in bitmap
+// TIPS: bit operation
+int LeafNode::getBit(const int& idx) {
+    // TODO
+    Byte flag = (bitmap[idx / 8] >> (idx % 8)) & 1;
+    return flag;
+}
+
+Key LeafNode::getKey(const int& idx) {
+    return this->kv[idx].k;
+}
+
+Value LeafNode::getValue(const int& idx) {
+    return this->kv[idx].v;
+}
+
+PPointer LeafNode::getPPointer() {
+    return this->pPointer;
+}
+
+// remove an entry from the leaf
+// if it has no entry after removement return TRUE to indicate outer func to delete this leaf.
+// need to call PAllocator to set this leaf free and reuse it
+bool LeafNode::remove(const Key& k, const int& index, InnerNode* const& parent, bool &ifDelete) {
+    bool ifRemove = false;
+    // TODO
+    ifDelete = false;
+    Byte ha = keyHash(k);
+    int i;
+    for (i = 0; i < degree * 2; i ++) {
+        if (getBit(i) && (kv[i].k == k) && (fingerprints[i] == ha)) {
+            ifRemove = true;
+            fingerprints[i] = 0;
+            bitmap[i / 8] &= ~(1 << (i % 8));//zhiling
+            n --;
+            if(n == 0) {
+                // if the node is empty, it should be delete
+                ifDelete = true;
+                LeafNode* p = this->prev;
+                LeafNode* n = this->next;
+                if (p != NULL) p->next = n;
+                if (n != NULL) n->prev = p;
+
+                PAllocator *pal = PAllocator::getAllocator();
+                pal->freeLeaf(this->pPointer);     // free the used leaf
+            }
+            this->persist();
+        }
+    }
+    return ifRemove;
+}
+
+// update the target entry
+// return TRUE if the update succeed
+bool LeafNode::update(const Key& k, const Value& v) {
+    bool ifUpdate = false;
+    // TODO
+    int hash = keyHash(k);
+    for(int i = 0;i < 2 * degree; ++i){
+        if(getBit(i) == 1 && (fingerprints[i] == hash)){
+            if(getKey(i) == k){
+                kv[i].v = v;
+                ifUpdate = true;
+                break;
+            }
+        }
+    }
+    persist();
+    return ifUpdate;
+}
+
+// if the entry can not be found, return the max Value
+Value LeafNode::find(const Key& k) {
+    // TODO
+    Byte* pointer = fingerprints;
+    Byte ha = keyHash(k);
+    for (int i = 0; i < degree * 2; ++i) {
+        if (getBit(i) && (kv[i].k == k) && (fingerprints[i] == ha)) {
+            return kv[i].v;
+        }
+        pointer++;
+    }
+    return MAX_VALUE;
+}
+
+// find the first empty slot
+int LeafNode::findFirstZero() {
+    // TODO
+    int i;
+    for (i = 0; i < this->degree * 2; i++)
+        if (this->getBit(i)==0)
+            return i;
+    return -1;
+}
+
+// persist the entire leaf
+// use PMDK
+void LeafNode::persist() {
+    // TODO
+    pmem_persist(pmem_addr,calLeafSize());
+}
+
+// call by the ~FPTree(), delete the whole tree
+void FPTree::recursiveDelete(Node* n) {
+    if (n->isLeaf) {
+        delete n;
+    } else {
+        for (int i = 0; i < ((InnerNode*)n)->nChild; i++) {
+            recursiveDelete(((InnerNode*)n)->childrens[i]);
+        }
+        delete n;
+    }
+}
+
+FPTree::FPTree(uint64_t t_degree) {
+    FPTree* temp = this;
+    this->root = new InnerNode(t_degree, temp, true);
+    this->degree = t_degree;
+    bulkLoading();
+}
+
+FPTree::~FPTree() {
+    recursiveDelete(this->root);
+}
+
+// get the root node of the tree
+InnerNode* FPTree::getRoot() {
+    return this->root;
+}
+
+// change the root of the tree
+void FPTree::changeRoot(InnerNode* newRoot) {
+    this->root = newRoot;
+}
+
+void FPTree::insert(Key k, Value v) {
+    if (root != NULL) {
+        root->insert(k, v);
+    }
+}
+
+bool FPTree::remove(Key k) {
+    if (root != NULL) {
+        bool ifDelete = false;
+        InnerNode* temp = NULL;
+        return root->remove(k, -1, temp, ifDelete);
+    }
+    return false;
+}
+
+bool FPTree::update(Key k, Value v) {
+    if (root != NULL) {
+        return root->update(k, v);
+    }
+    return false;
+}
+
+Value FPTree::find(Key k) {
+    if (root != NULL) {
+        return root->find(k);
+    }
+}
+
+// call the InnerNode and LeafNode print func to print the whole tree
+// TIPS: use Queue
+void FPTree::printTree() {
+    // TODO
+    queue<Node *> q;
+    q.push(root);
+    while(!q.empty()) {
+        Node *tmp = q.front();
+        if(!tmp->isLeaf){
+            InnerNode* in = dynamic_cast<InnerNode*>(tmp);
+            in->printNode();
+            for(int i = 0; i < in->getChildNum(); i ++) {
+                q.push(in->getChild(i));
+            }
+        }
+        else {
+            LeafNode* l = dynamic_cast<LeafNode*>(tmp);
+            l->printNode();
+        }
+        q.pop();
+    }
+    cout << endl;
+}
+
+// bulkLoading the leaf files and reload the tree
+// need to traverse leaves chain
+// if no tree is reloaded, return FALSE
+// need to call the PALlocator
+bool FPTree::bulkLoading() {
+    // TODO
+    PPointer startpointer = PAllocator::getAllocator()->getStartPointer();
+    if(startpointer.fileId != 0) {
+        LeafNode* leaf = new LeafNode(startpointer, this);
+        KeyNode releaf;
+        while(leaf != nullptr){
+            releaf.node = leaf;
+            Key result = leaf->getKey(0);
+            for(int i = 1; i < leaf->n; i++) {
+                // get the smallest key
+                if(leaf->getKey(i) < result && leaf->getBit(i))
+                    result = leaf->getKey(i);
+            }
+            releaf.key = result;
+            this->root->insertLeaf(releaf);
+            leaf = leaf->next;
+        }
+        return true;
+    }
+    return false;
+}
