@@ -23,7 +23,7 @@ PAllocator* PAllocator::getAllocator() {
    In freeList file:
    | freeList{(fId, offset)1,...(fId, offset)m} |
 */
-PAllocator::PAllocator() { //ok
+PAllocator::PAllocator() {
     string allocatorCatalogPath = DATA_DIR + P_ALLOCATOR_CATALOG_NAME;
     string freeListPath         = DATA_DIR + P_ALLOCATOR_FREE_LIST;
     ifstream allocatorCatalog(allocatorCatalogPath, ios::in|ios::binary);
@@ -36,8 +36,8 @@ PAllocator::PAllocator() { //ok
         allocatorCatalog.read((char*)&(this->freeNum), sizeof(this->freeNum));
         allocatorCatalog.read((char*)&(this->startLeaf.fileId), sizeof(this->startLeaf.fileId));
         allocatorCatalog.read((char*)&(this->startLeaf.offset), sizeof(this->startLeaf.offset));
-        this->freeList.resize(freeNum);
-        for(int i = 0; i < this->freeNum; i++) {
+        this->freeList.resize(this->freeNum);
+        for(uint64_t i = 0; i < this->freeNum; i++) {
             freeListFile.read((char*)&(this->freeList[i].fileId), sizeof(this->freeList[i].fileId));
             freeListFile.read((char*)&(this->freeList[i].offset), sizeof(this->freeList[i].offset));
         }
@@ -51,7 +51,7 @@ PAllocator::PAllocator() { //ok
         this->maxFileId = 1;
         this->freeNum = 0;
         this->startLeaf.fileId = 0;
-        this->startLeaf.offset=LEAF_GROUP_HEAD;
+        this->startLeaf.offset = LEAF_GROUP_HEAD;
         allocatorCatalogOut.write((char*)&this->maxFileId, sizeof(this->maxFileId));
         allocatorCatalogOut.write((char*)&this->freeNum, sizeof(this->freeNum));
         allocatorCatalogOut.write((char*)&(startLeaf), sizeof(PPointer));
@@ -73,17 +73,21 @@ void PAllocator::initFilePmemAddr() { //ok
     char *pmemaddr;
     size_t mapped_len;
     int is_pmem;
-    for (int i = 1; i < this->maxFileId; ++i) {
+    for (uint64_t i = 1; i < this->maxFileId; ++i) {
+        // initial the pmemaddr
         pmemaddr = (char*)pmem_map_file((DATA_DIR + to_string(i)).c_str(), LEAF_GROUP_HEAD + LEAF_GROUP_AMOUNT * calLeafSize(),
                     PMEM_FILE_CREATE, 0666, &mapped_len, &is_pmem);
+        // put the pmemaddr into the map
         this->fId2PmAddr.insert(pair<uint64_t, char*>(i, pmemaddr));
+        // peresist the pmemaddr
         pmem_persist(pmemaddr, mapped_len);
     }
 }
 
 // get the pmem address of the target PPointer from the map fId2PmAddr
-char* PAllocator::getLeafPmemAddr(PPointer p) { //ok
+char* PAllocator::getLeafPmemAddr(PPointer p) {
     // TODO
+    // find the fileId in the map and return the pmemaddr
     map<uint64_t, char*>::iterator it = this->fId2PmAddr.find(p.fileId);
     if (it != this->fId2PmAddr.end()) {
         return it->second + p.offset;
@@ -93,56 +97,64 @@ char* PAllocator::getLeafPmemAddr(PPointer p) { //ok
 
 // get and use a leaf for the fptree leaf allocation
 // return 
-bool PAllocator::getLeaf(PPointer &p, char* &pmem_addr) { //ok
+bool PAllocator::getLeaf(PPointer &p, char* &pmem_addr) {
     // TODO
-    if (freeNum == 0) {
-        if (!newLeafGroup()) return false;
+    // if there is no any free leaf, it should create a new leafgroup first
+    if (this->freeNum == 0) {
+        if (!this->newLeafGroup()) return false;
     }
-    p.offset = this->freeList[freeNum - 1].offset;
-    p.fileId = this->freeList[freeNum - 1].fileId;
+
+    // get and use a leaf from the freelist
+    p.offset = this->freeList[this->freeNum - 1].offset;
+    p.fileId = this->freeList[this->freeNum - 1].fileId;
     pmem_addr = getLeafPmemAddr(p);
     if (pmem_addr == NULL) return false;
     this->freeList.pop_back();
-    uint64_t *usedNum = (uint64_t*)fId2PmAddr[p.fileId];
+
+    // and then change the information in the map
+    uint64_t *usedNum = (uint64_t*)this->fId2PmAddr[p.fileId];
     *usedNum = *usedNum + 1;
-    fId2PmAddr[p.fileId] = (char*)usedNum;
-    fId2PmAddr[p.fileId] += ((p.offset - LEAF_GROUP_HEAD) / calLeafSize() + sizeof(uint64_t));
-    *fId2PmAddr[p.fileId] = 1;
-    fId2PmAddr[p.fileId] -= ((p.offset - LEAF_GROUP_HEAD) / calLeafSize() + sizeof(uint64_t));
-    pmem_persist(fId2PmAddr[p.fileId], LEAF_GROUP_HEAD + LEAF_GROUP_AMOUNT * calLeafSize());
+    this->fId2PmAddr[p.fileId] = (char*)usedNum;
+    this->fId2PmAddr[p.fileId] += ((p.offset - LEAF_GROUP_HEAD) / calLeafSize() + sizeof(uint64_t));
+    *this->fId2PmAddr[p.fileId] = 1;
+    this->fId2PmAddr[p.fileId] -= ((p.offset - LEAF_GROUP_HEAD) / calLeafSize() + sizeof(uint64_t));
+    pmem_persist(this->fId2PmAddr[p.fileId], LEAF_GROUP_HEAD + LEAF_GROUP_AMOUNT * calLeafSize());
     --this->freeNum;
     return true;
 }
 
-bool PAllocator::ifLeafUsed(PPointer p) { //ok
+bool PAllocator::ifLeafUsed(PPointer p) {
     // TODO
-    if (!ifLeafExist(p)) return false;
-    if (!ifLeafFree(p)) return true;
+    if (!this->ifLeafExist(p)) return false;
+    if (!this->ifLeafFree(p)) return true;
     return false;
 }
 
-bool PAllocator::ifLeafFree(PPointer p) { //ok
+bool PAllocator::ifLeafFree(PPointer p) {
     // TODO
-    for (int i = 0; i < this->freeList.size(); i++)
+    for (uint64_t i = 0; i < this->freeList.size(); i++)
         if (p == this->freeList[i])
             return true;
     return false;
 }
 
 // judge whether the leaf with specific PPointer exists. 
-bool PAllocator::ifLeafExist(PPointer p) { //ok
+bool PAllocator::ifLeafExist(PPointer p) {
     // TODO
-    if ((p.fileId < 0) || (p.fileId >= this->maxFileId)) return false;
-    if ((p.offset < 0) || (p.offset < LEAF_GROUP_HEAD) || ((p.offset - LEAF_GROUP_HEAD) % calLeafSize() != 0)) return false;
+    if (p.fileId >= this->maxFileId) return false;
+    if ((p.offset < LEAF_GROUP_HEAD) || ((p.offset - LEAF_GROUP_HEAD) % calLeafSize() != 0)) return false;
     return true;
 }
 
 // free and reuse a leaf
-bool PAllocator::freeLeaf(PPointer p) { //ok
+bool PAllocator::freeLeaf(PPointer p) {
     // TODO
-    if (ifLeafUsed(p)) {
+    if (this->ifLeafUsed(p)) {
+        // set the bitmap to zero
         this->fId2PmAddr[p.fileId][(p.offset - LEAF_GROUP_HEAD) / calLeafSize() + sizeof(uint64_t)] = 0;
+        // usedNum -= 1
         ((uint64_t*)this->fId2PmAddr[p.fileId])[0] -= 1;
+        // update the freeList
         this->freeNum++;
         this->freeList.push_back(p);
         return true;
@@ -152,6 +164,7 @@ bool PAllocator::freeLeaf(PPointer p) { //ok
 
 bool PAllocator::persistCatalog() {
     // TODO
+    // write back the information to the files
     string allocatorCatalogPath = DATA_DIR + P_ALLOCATOR_CATALOG_NAME;
     string freeListPath         = DATA_DIR + P_ALLOCATOR_FREE_LIST;
     ofstream allocatorCatalog(allocatorCatalogPath, ios::in|ios::binary);
@@ -161,7 +174,7 @@ bool PAllocator::persistCatalog() {
     allocatorCatalog.write((char*)&this->freeNum, sizeof(this->freeNum));
     allocatorCatalog.write((char*)&(this->startLeaf.fileId), sizeof(this->startLeaf.fileId));
     allocatorCatalog.write((char*)&(this->startLeaf.offset), sizeof(this->startLeaf.offset));
-    for (int i = 0; i < this->freeNum; ++i) {
+    for (uint64_t i = 0; i < this->freeNum; ++i) {
         freeListFile.write((char*)&(this->freeList[i].fileId), sizeof(this->freeList[i].fileId));
         freeListFile.write((char*)&(this->freeList[i].offset), sizeof(this->freeList[i].offset));
     }
@@ -179,30 +192,41 @@ bool PAllocator::newLeafGroup() {
     // TODO
     ofstream newLeafGroupFile(DATA_DIR + to_string(this->maxFileId), ios::out|ios::binary);
     if (newLeafGroupFile.is_open()) {
+        // initial the usedNum
         uint64_t usedNum = 0;
+        
+        // initial the bitmap
         char bitmap[LEAF_GROUP_AMOUNT];
         for (int i = 0; i < LEAF_GROUP_AMOUNT; ++i) {
             bitmap[i] = '0';
         }
+
+        // initial the leaves
         char leaf[LEAF_GROUP_AMOUNT * calLeafSize()];
         memset(leaf, 0, sizeof(leaf));
+
+        // write the new leafgroup to the file
         newLeafGroupFile.write((char*)&(usedNum), sizeof(usedNum));
         newLeafGroupFile.write((char*)bitmap, sizeof(bitmap));
         newLeafGroupFile.write((char*)&leaf, sizeof(leaf));
+
+        // map the pmemaddr with the fileId
         char *pmemaddr;
         int is_pmem;
         size_t mapped_len;
         pmemaddr = (char *)pmem_map_file((DATA_DIR + to_string(this->maxFileId)).c_str(), LEAF_GROUP_HEAD + LEAF_GROUP_AMOUNT * calLeafSize(), PMEM_FILE_CREATE, 0666, &mapped_len, &is_pmem);
         
-        this->fId2PmAddr[maxFileId] = pmemaddr;
+        this->fId2PmAddr[this->maxFileId] = pmemaddr;
         this->freeNum += LEAF_GROUP_AMOUNT;
         PPointer temp;
         temp.fileId = this->maxFileId;
+
+        // initial the freeList of the new leafgroup
         for (int i = 0; i < LEAF_GROUP_AMOUNT; ++i) {
             temp.offset = LEAF_GROUP_HEAD + i * calLeafSize();
             freeList.push_back(temp);
         }
-        if(maxFileId == 1) {
+        if(this->maxFileId == 1) {
             this->startLeaf.fileId = 1;
             this->startLeaf.offset = LEAF_GROUP_HEAD + (LEAF_GROUP_AMOUNT - 1) * calLeafSize();
         }
