@@ -576,7 +576,7 @@ KeyNode* LeafNode::split() {
 // called by the split func to generate new leaf-node
 // qsort first then find
 
-int cmp(const void* kv1,const void* kv2) { return ((KeyValue* )kv1)->k > ((KeyValue* )kv2)->k;}
+int cmp(const void* kv1,const void* kv2) {return ((KeyValue* )kv1)->k > ((KeyValue* )kv2)->k;}
 
 Key LeafNode::findSplitKey() {
     Key midKey = 0;
